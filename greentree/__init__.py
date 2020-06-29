@@ -15,9 +15,20 @@ import torch.nn.functional as F
 from skimage.util import montage
 from torch.nn.functional import *
 from torch.autograd import Variable
-from torchvision import datasets, transforms
 
-
+import os
+import torch.nn as nn
+import torch.optim as optim
+from torch.optim import lr_scheduler
+import torchvision
+from torchvision import datasets, models, transforms
+import matplotlib.pyplot as plt
+import copy
+import shutil
+from PIL import Image  
+import PIL 
+import warnings
+warnings.filterwarnings("ignore") 
 
 
 
@@ -468,3 +479,233 @@ def drawnet(insize,f_num,f_size):
     
     
     
+    
+    
+    
+    
+def split(path):
+    f = os.listdir(path)
+    print(len(f))
+
+    fraction_train_val = 0.2
+
+    os.chdir("/content/image_set/")
+    os.mkdir('train')
+    os.mkdir('val')
+
+    for j in range(len(f)):
+
+        os.mkdir("/content/image_set/train/"+f[j])
+        os.mkdir("/content/image_set/val/"+f[j])
+
+        os.chdir("/content/image_set/"+f[j])
+        L1 = os.listdir("/content/image_set/"+f[j])
+        S = len(L1)
+        R1 = np.random.permutation(len(L1))
+        fract = np.int(S*fraction_train_val)
+        val_set = R1[0:fract]
+        train_set = R1[fract:]
+        val_list = [L1[x] for x in val_set]
+        train_list = [L1[x] for x in train_set]
+        
+        for i in range(len(val_set)):
+            source = val_list[i]
+            destination = "/content/image_set/val/"+f[j]+"/" + source
+            shutil.move(source, destination)
+
+        
+        for i in range(len(train_set)):
+            source = train_list[i]
+            destination = "/content/image_set/train/"+f[j]+"/" + source
+            shutil.move(source, destination)
+            
+def remove_transparency(im, bg_colour=(255, 255, 255)):
+
+    # Only process if image has transparency (http://stackoverflow.com/a/1963146)
+    if im.mode in ('RGBA', 'LA') or (im.mode == 'P' and 'transparency' in im.info):
+
+        bg = Image.new("RGBA", im.size, bg_colour + (255,))
+        bg.paste(im, mask=im.convert('RGBA').split()[-1])
+        return bg
+
+    else:
+        return im
+    
+    
+def remove_transparency_list(path):
+
+    f = os.listdir(path)
+    print(len(f))
+
+    for j in range(len(f)):
+
+        os.chdir(path+f[j])
+        L1 = os.listdir(path+f[j])
+        for i in L1:
+            # print(i)
+            try:
+                im1 = Image.open(i)
+                im1 = remove_transparency(im1, bg_colour=(255, 255, 255))
+                im1 = im1.save(i)
+            except:
+                os.remove(i)
+            
+            
+            
+def imshow(inp, title=None):
+    inp = inp.numpy().transpose((1, 2, 0))
+    mean = np.array([0.485, 0.456, 0.406])
+    std = np.array([0.229, 0.224, 0.225])
+    inp = std * inp + mean
+    inp = np.clip(inp, 0, 1)
+    plt.imshow(inp)
+    if title is not None:
+        plt.title(title)
+    plt.pause(0.001)  # pause a bit so that plots are updated
+
+
+def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
+    since = time.time()
+
+    best_model_wts = copy.deepcopy(model.state_dict())
+    best_acc = 0.0
+
+    for epoch in range(num_epochs):
+        print('Epoch {}/{}'.format(epoch, num_epochs - 1))
+        print('-' * 10)
+
+        # Each epoch has a training and validation phase
+        for phase in ['train', 'val']:
+
+            if phase == 'train':
+                scheduler.step()
+                model.train()  # Set model to training mode
+            else:
+                model.eval()   # Set model to evaluate mode
+
+            running_loss = 0.00
+            running_corrects = 0
+
+            # Iterate over data.
+            for inputs, labels in dataloaders[phase]:
+                inputs = inputs.to(device)
+                labels = labels.to(device)
+
+                # zero the parameter gradients
+                optimizer.zero_grad()
+
+                # forward
+                # track history if only in train
+                with torch.set_grad_enabled(phase == 'train'):
+
+                    outputs = model(inputs)
+
+                    _, preds = torch.max(outputs, 1)
+                    
+                    loss = criterion(outputs, labels)
+
+                    # backward + optimize only if in training phase
+                    if phase == 'train':
+                        loss.backward()
+                        optimizer.step()
+
+                # statistics
+                running_loss += loss.item() * inputs.size(0)
+                running_corrects += torch.sum(preds == labels.data)
+
+            epoch_loss = running_loss / dataset_sizes[phase]
+            epoch_acc = running_corrects.double() / dataset_sizes[phase]
+
+            print('{} Loss: {:.4f} Acc: {:.4f}'.format(
+                phase, epoch_loss, epoch_acc))
+
+            # deep copy the model
+            if phase == 'val' and epoch_acc > best_acc:
+                best_acc = epoch_acc
+                best_model_wts = copy.deepcopy(model.state_dict())
+
+
+    time_elapsed = time.time() - since
+    print('Training complete in {:.0f}m {:.0f}s'.format(
+        time_elapsed // 60, time_elapsed % 60))
+    print('Best val Acc: {:4f}'.format(best_acc))
+
+    # load best model weights
+    model.load_state_dict(best_model_wts)
+    
+    return model
+
+
+
+
+def visualize_model(model, num_images=6):
+    was_training = model.training
+    model.eval()
+    images_so_far = 0
+    fig = plt.figure()
+
+    with torch.no_grad():
+        for i, (inputs, labels) in enumerate(dataloaders['val']):
+            inputs = inputs.to(device)
+            labels = labels.to(device)
+
+            outputs = model(inputs)
+            _, preds = torch.max(outputs, 1)
+
+            for j in range(inputs.size()[0]):
+                images_so_far += 1
+                ax = plt.subplot(num_images//2, 2, images_so_far)
+                ax.axis('off')
+                ax.set_title('predicted: {}'.format(class_names[preds[j]]))
+                imshow(inputs.cpu().data[j])
+
+                if images_so_far == num_images:
+                    model.train(mode=was_training)
+                    return
+        model.train(mode=was_training)
+        
+        
+        
+        
+        
+def plot(x):
+    fig, ax = plt.subplots()
+    im = ax.imshow(x, cmap = 'gray')
+    ax.axis('off')
+    fig.set_size_inches(18, 10)
+    plt.show()
+    
+    
+    
+    
+def show_output(model, dataloaders, class_names, device, num_images=16):
+    was_training = model.training
+    model.eval()
+    images_so_far = 0
+    fig = plt.figure()
+
+    with torch.no_grad():
+        for i, (inputs, labels) in enumerate(dataloaders['val']):
+            inputs = inputs.to(device)
+            labels = labels.to(device)
+
+            outputs = model(inputs)
+            _, preds = torch.max(outputs, 1)
+
+            for j in range(inputs.size()[0]):
+                images_so_far += 1
+                ax = plt.subplot(num_images//2, 2, images_so_far)
+                ax.axis('off')
+                ax.set_title('predicted: {}'.format(class_names[preds[j]]))
+                
+                imshow(inputs.cpu().data[j])
+
+                fig = plt.gcf()
+                fig.set_size_inches(20, 20)
+
+                if images_so_far == num_images:
+                    model.train(mode=was_training)
+                    return
+        model.train(mode=was_training)
+        
+        
