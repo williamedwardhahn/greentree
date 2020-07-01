@@ -945,3 +945,10 @@ def data_show(data_dir,batch=4):
 
 def inference(im,model):
     return model(load_im(im)).cpu().data.numpy().argmax()
+
+
+def label_image(url,show=True):
+    im = imageio.imread(url)[:,:,:3]
+    if show:
+        plot(im)
+    return labels[inference(im,model)]
