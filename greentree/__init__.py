@@ -614,14 +614,7 @@ def train_model(data_dir, num_epochs=25):
     model = model.to(device)
     
     
-    
-    
-    
-    
-    
-    
-    
-    
+   
     
     optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
     scheduler = lr_scheduler.StepLR(optimizer, step_size=8, gamma=0.05)
@@ -946,7 +939,7 @@ def data_show(data_dir,batch=4):
     
     inputs, classes = next(iter(dataloaders['train']))
     imshow(torchvision.utils.make_grid(inputs), title=[class_names[x] for x in classes])
-    print(dataset_sizes)
+    print(class_names,dataset_sizes)
 
 def inference(im,model):
     return model(load_im(im)).cpu().data.numpy().argmax()
