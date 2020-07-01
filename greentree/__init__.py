@@ -926,10 +926,11 @@ def data_show(data_dir,batch=4):
     image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x),data_transforms[x]) for x in ['train', 'val']}
     dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=batch, shuffle=True, num_workers=4) for x in ['train', 'val']}
     class_names = image_datasets['train'].classes
-
+    dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val']}
+    
     inputs, classes = next(iter(dataloaders['train']))
     imshow(torchvision.utils.make_grid(inputs), title=[class_names[x] for x in classes])
-
+    print(dataset_sizes)
 
 def inference(im,model):
     return model(load_im(im)).cpu().data.numpy().argmax()
