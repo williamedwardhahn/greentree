@@ -882,3 +882,25 @@ def get_images(s0, limit = 100):
     filters = ''
     pool_sema = threading.BoundedSemaphore(20)
     fetch_images_from_keyword(pool_sema, search_string, output_dir, filters, limit)
+    
+    
+    
+    
+def load_im(im):
+    
+    normalize = transforms.Normalize(
+        mean=[0.485, 0.456, 0.406],
+        std=[0.229, 0.224, 0.225]
+    )
+    preprocess = transforms.Compose([
+        transforms.Resize(256),
+        transforms.CenterCrop(224),
+        transforms.ToTensor(),
+        normalize
+    ])
+
+    image = Image.fromarray(im) #convert to pil
+    img_tensor = preprocess(image)
+    img_tensor = img_tensor.unsqueeze_(0)
+    img_variable = torch.tensor(img_tensor).cuda(0)
+    return img_variable
