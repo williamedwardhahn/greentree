@@ -728,3 +728,91 @@ def show_output(model, dataloaders, class_names, device, num_images=16):
         model.train(mode=was_training)
         
         
+        
+        
+        
+        
+def download(pool_sema: threading.Semaphore, url: str, output_dir: str):
+    global in_progress
+    urlopenheader={ 'User-Agent' : 'Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0'}
+    pool_sema.acquire()
+    in_progress += 1
+    path = urllib.parse.urlsplit(url).path
+    filename = posixpath.basename(path).split('?')[0] #Strip GET parameters from filename
+    name, ext = os.path.splitext(filename)
+    name = name[:36]
+    filename = name + ext
+
+    request=urllib.request.Request(url,None,urlopenheader)
+    image=urllib.request.urlopen(request).read()
+    if not imghdr.what(None, image):
+        print('Invalid image, not saving ' + filename)
+        return
+
+    i = 0
+    while os.path.exists(os.path.join(output_dir, filename)):
+        i += 1
+        filename = "%s-%d%s" % (name, i, ext)
+
+    imagefile=open(os.path.join(output_dir, filename),'wb')
+    imagefile.write(image)
+    imagefile.close()
+    print("OK: " + filename)
+
+    time.sleep(1)
+
+    pool_sema.release()
+    in_progress -= 1
+    
+    
+    
+def fetch_images_from_keyword(pool_sema: threading.Semaphore, keyword: str, output_dir: str, filters: str, limit: int):
+    adlt = ''
+    current = 0
+    last = ''
+    socket.setdefaulttimeout(2)
+    urlopenheader={ 'User-Agent' : 'Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0'}
+
+    while True:
+        time.sleep(0.1)
+
+        if in_progress > 10:
+            continue
+
+        request_url='https://www.bing.com/images/async?q=' + urllib.parse.quote_plus(keyword) + '&first=' + str(current) + '&count=35&adlt=' + adlt + '&qft=' + ('' if filters is None else filters)
+        request=urllib.request.Request(request_url,None,headers=urlopenheader)
+        response=urllib.request.urlopen(request)
+        html = response.read().decode('utf8')
+        links = re.findall('murl&quot;:&quot;(.*?)&quot;',html)
+        try:
+            if links[-1] == last:
+                return
+            for index, link in enumerate(links):
+                if limit is not None and current + index >= limit:
+                    return
+                t = threading.Thread(target = download,args = (pool_sema, link, output_dir))
+                t.start()
+                current += 1
+            last = links[-1]
+        except IndexError:
+            print('No search results for "{0}"'.format(keyword))
+            return
+        
+        
+        
+        
+        
+def get_images(s0, limit = 100):
+    global in_progress 
+    in_progress = 0
+    socket.setdefaulttimeout(2)
+    os.mkdir('image_set')
+    os.chdir('image_set')
+    os.mkdir(s0)
+    path0 = '/content/image_set/' + s0 
+    os.chdir('/content/')
+    search_string = s0
+    output_dir = path0
+    filters = ''
+    pool_sema = threading.BoundedSemaphore(20)
+    fetch_images_from_keyword(pool_sema, search_string, output_dir, filters, limit)
