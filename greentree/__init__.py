@@ -583,7 +583,13 @@ def imshow(inp, title=None):
     plt.pause(0.001)  # pause a bit so that plots are updated
 
 
-def train_model(model, dataloaders, criterion, optimizer, scheduler, device, dataset_sizes, num_epochs=25):
+def train_model(model, dataloaders, dataset_sizes, num_epochs=25):
+    
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=8, gamma=0.05)
+    optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+    criterion = nn.CrossEntropyLoss()
+    
     since = time.time()
 
     best_model_wts = copy.deepcopy(model.state_dict())
@@ -697,7 +703,8 @@ def plot(x):
     
     
     
-def show_output(model, dataloaders, class_names, device, num_images=16):
+def show_output(model, dataloaders, class_names, num_images=16):
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     was_training = model.training
     model.eval()
     images_so_far = 0
