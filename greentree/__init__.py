@@ -585,13 +585,6 @@ def imshow(inp, title=None):
 
 def train_model(data_dir, num_epochs=25):
     
-    model = models.resnet18(pretrained=True)
-    num_ftrs = model.fc.in_features
-    model.fc = nn.Linear(num_ftrs, 2)
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model = model.to(device)
-    
-   
     data_transforms = {
         'train': transforms.Compose([
             transforms.RandomResizedCrop(224),
@@ -612,6 +605,23 @@ def train_model(data_dir, num_epochs=25):
     dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=4, shuffle=True, num_workers=4) for x in ['train', 'val']}
     class_names = image_datasets['train'].classes
     dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val']}
+    
+    
+    model = models.resnet18(pretrained=True)
+    num_ftrs = model.fc.in_features
+    model.fc = nn.Linear(num_ftrs, len(class_names))
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    model = model.to(device)
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
     scheduler = lr_scheduler.StepLR(optimizer, step_size=8, gamma=0.05)
