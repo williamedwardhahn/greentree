@@ -728,7 +728,7 @@ def plot(x):
     fig, ax = plt.subplots()
     im = ax.imshow(x, cmap = 'gray')
     ax.axis('off')
-    fig.set_size_inches(18, 10)
+    fig.set_size_inches(8, 8)
     plt.show()
     
     
