@@ -614,9 +614,9 @@ def train_model(data_dir, num_epochs=25):
     class_names = image_datasets['train'].classes
     dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val']}
     
-    
-    scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=8, gamma=0.05)
     optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+    scheduler = lr_scheduler.StepLR(optimizer, step_size=8, gamma=0.05)
+    
     criterion = nn.CrossEntropyLoss()
     
     since = time.time()
