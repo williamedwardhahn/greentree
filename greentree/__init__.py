@@ -939,7 +939,9 @@ def data_show(data_dir,batch=4):
     
     inputs, classes = next(iter(dataloaders['train']))
     imshow(torchvision.utils.make_grid(inputs), title=[class_names[x] for x in classes])
-    print(class_names,dataset_sizes)
+    print("Class Names: ",class_names, "Dataset Size: ",dataset_sizes)
+    
+    return class_names
 
 def inference(im,model):
     return model(load_im(im)).cpu().data.numpy().argmax()
