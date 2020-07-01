@@ -806,9 +806,17 @@ def get_images(s0, limit = 100):
     global in_progress 
     in_progress = 0
     socket.setdefaulttimeout(2)
-    os.mkdir('image_set')
-    os.chdir('image_set')
-    os.mkdir(s0)
+    
+    try:
+        os.mkdir('image_set')
+        os.chdir('image_set')
+        try:
+            os.mkdir(s0)
+        except:
+            pass
+    except:
+        pass
+    
     path0 = '/content/image_set/' + s0 
     os.chdir('/content/')
     search_string = s0
