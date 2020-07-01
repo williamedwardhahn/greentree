@@ -52,7 +52,7 @@ import tensorflow.compat.v2 as tf
 import tensorflow_hub as hub
 import pandas as pd
 
-
+import os, urllib.request, re, threading, posixpath, urllib.parse, argparse, socket, time, hashlib, pickle, signal, imghdr
 
 
 #https://github.com/yu4u/convnet-drawer
