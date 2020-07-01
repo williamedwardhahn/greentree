@@ -799,36 +799,42 @@ def show_output(model,data_dir, num_images=16):
         
         
 def download(pool_sema: threading.Semaphore, url: str, output_dir: str):
+    
     global in_progress
-    urlopenheader={ 'User-Agent' : 'Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0'}
-    pool_sema.acquire()
-    in_progress += 1
-    path = urllib.parse.urlsplit(url).path
-    filename = posixpath.basename(path).split('?')[0] #Strip GET parameters from filename
-    name, ext = os.path.splitext(filename)
-    name = name[:36]
-    filename = name + ext
+    
+    try:
+    
+        urlopenheader={ 'User-Agent' : 'Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0'}
+        pool_sema.acquire()
+        in_progress += 1
+        path = urllib.parse.urlsplit(url).path
+        filename = posixpath.basename(path).split('?')[0] #Strip GET parameters from filename
+        name, ext = os.path.splitext(filename)
+        name = name[:36]
+        filename = name + ext
 
-    request=urllib.request.Request(url,None,urlopenheader)
-    image=urllib.request.urlopen(request).read()
-    if not imghdr.what(None, image):
-        print('Invalid image, not saving ' + filename)
-        return
+        request=urllib.request.Request(url,None,urlopenheader)
+        image=urllib.request.urlopen(request).read()
+        if not imghdr.what(None, image):
+            print('Invalid image, not saving ' + filename)
+            return
 
-    i = 0
-    while os.path.exists(os.path.join(output_dir, filename)):
-        i += 1
-        filename = "%s-%d%s" % (name, i, ext)
+        i = 0
+        while os.path.exists(os.path.join(output_dir, filename)):
+            i += 1
+            filename = "%s-%d%s" % (name, i, ext)
 
-    imagefile=open(os.path.join(output_dir, filename),'wb')
-    imagefile.write(image)
-    imagefile.close()
-    print("OK: " + filename)
+        imagefile=open(os.path.join(output_dir, filename),'wb')
+        imagefile.write(image)
+        imagefile.close()
+        print("OK: " + filename)
 
-    time.sleep(1)
+    except:
+        pass
+    finally:
 
-    pool_sema.release()
-    in_progress -= 1
+        pool_sema.release()
+        in_progress -= 1
     
     
     
