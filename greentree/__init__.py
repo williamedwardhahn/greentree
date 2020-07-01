@@ -810,13 +810,15 @@ def get_images(s0, limit = 100):
     try:
         os.mkdir('image_set')
         os.chdir('image_set')
-        try:
-            os.mkdir(s0)
-        except:
-            pass
+    except:
+        os.chdir('image_set')
+    
+    try:
+        os.mkdir(s0)
     except:
         pass
     
+  
     path0 = '/content/image_set/' + s0 
     os.chdir('/content/')
     search_string = s0
