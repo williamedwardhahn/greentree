@@ -904,3 +904,8 @@ def load_im(im):
     img_tensor = img_tensor.unsqueeze_(0)
     img_variable = torch.tensor(img_tensor).cuda(0)
     return img_variable
+
+
+
+def inference(im,model):
+    return model(load_im(im)).cpu().data.numpy().argmax()
